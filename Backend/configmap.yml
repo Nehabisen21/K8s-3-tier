@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: postgres-config
+    namespace: backend
+data:
+   DB_HOST: aa5a8facc552242e3b0df4c3ebcbbbe3-30043979062865e2.elb.us-east-1.amazonaws.com  ##NLB Endpoint
+   DB_PORT: "5432"

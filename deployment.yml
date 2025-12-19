@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: react-app
+  namespace: frontend
+spec:
+  replicas: 1
+  selector: ##Defines which Pods belong to this Deployment.
+    matchLabels:  ###I (the Deployment) will manage ONLY Pods that have this label.
+      app: react
+  template:
+    metadata:
+      labels:
+        app: react
+    spec:
+     affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: dedicated
+                  operator: In
+                  values:
+                    - node1
+
+      containers:
+      - name: react
+        image: neha2108/frontend   # Example: React build served by Nginx pull from Docker Hub
+        ports:
+        - containerPort: 80

@@ -1,0 +1,143 @@
+####
+
+docker tag myapp neha2108/react-frontend:latest
+docker push neha2108/react-frontend:latest
+
+
+ Node external ip address is use to access frontend service using NodePort it changes every time when node is restarted so use below command to allocate elastic ip to node
+
+### AWS, kubectl,eks,Installing command
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+sudo apt install unzip
+unzip awscliv2.zip
+sudo ./aws/install
+aws configure
+
+###Install kubectl (Master machine)(Setup kubectl )
+curl -LO https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubectl
+chmod +x ./kubectl
+sudo mv ./kubectl /usr/local/bin
+kubectl version --short --client
+
+Install eksctl (Master machine) (Setup eksctl)
+curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+sudo mv /tmp/eksctl /usr/local/bin
+eksctl version
+
+Create EKS Cluster (Master machine)
+eksctl create cluster --name=K8s-Cluster \
+                    --region=us-east-1 \
+                    --version=1.30 \
+                    --without-nodegroup
+
+Associate IAM OIDC Provider (Master machine) ###(OpenID Connect) Pod-level IAM security Least-privilege access
+✔ Mandatory for CSI drivers & controllers
+eksctl utils associate-iam-oidc-provider \
+  --region us-east-1 \
+  --cluster K8s-Cluster \
+  --approve
+Create Nodegroup (Master machine)
+eksctl create nodegroup --cluster=K8s-Cluster \
+                     --region=us-east-1 \
+                     --name=Node  \
+                     --node-type=t3.small \
+                     --nodes=2 \
+                     --nodes-min=2 \
+                     --nodes-max=2 \
+                     --node-volume-size=29 \
+                     --ssh-access \
+                     --ssh-public-key=new-aws-key \
+                
+#################################################################################################################
+ Create deployment, namespace, service files and apply using kubectl
+ kubectl apply -f deployment.yml and other files
+
+
+##helm commands to deploy postgresql using helm chart
+
+create helm directory and add values.yaml, secret.yml file
+then run below commands
+curl -O https://get.helm.sh/helm-v3.16.2-linux-amd64.tar.gz
+tar xvf helm-v3.16.2-linux-amd64.tar.gz
+sudo mv linux-amd64/helm /usr/local/bin
+
+helm version
+
+helm repo add bitnami https://charts.bitnami.com/bitnami
+
+helm repo update
+
+helm install postgres bitnami/postgresql   -f values.yml   --namespace database   --create-namespace
+
+
+kubectl get pods -n kube-system | grep ebs ##check ebs csi driver is installed or not
+
+aws eks create-addon   --cluster-name K8s-Cluster   --addon-name aws-ebs-csi-driver ##install ebs csi driver if not installed
+
+eksctl create iamserviceaccount   --name ebs-csi-controller-sa   --namespace kube-system   --cluster K8s-Cluster   --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy   --approve   --override-existing-serviceaccounts --region us-east-1
+
+
+###restart the ebs-csi-driver pod in kube-system namespace 
+kubectl rollout restart deployment ebs-csi-controller -n kube-system
+
+##unistall 
+helm uninstall postgres -n database
+
+##delete pvc
+kubectl delete pvc -n database --all
+
+##again install for new pstgresql 
+helm install postgres bitnami/postgresql   -f values.yml   -n database
+
+###exec into postgresql pod
+ kubectl exec -it postgres-postgresql-0 -n database -- bash
+
+ after exec into pod run below command to access psql
+    psql -U postgres -d reactdb
+
+  ##secret created using below command
+  kubectl create secret generic postgres-secret \
+  --from-literal=postgres-password=StrongPassword123 \
+  -n database
+
+  access postgres via NLB link using port 5432
+  psql -h aa5a8facc552242e3b0df4c3ebcbbbe3-30043979062865e2.elb.us-east-1.amazonaws.com \
+-U reactuser \
+-d postgres \
+-p 5432
+
+
+https://artifacthub.io/packages/helm/bitnami/postgresql ##to show all template
+
+###port forward to access postgresql database using psql
+kubectl port-forward --namespace database svc/postgres-postgresql 5432:5432 &
+    psql --host 127.0.0.1 -d reactdb -p 5432
+
+###kubectl commands to check resources
+kubectl get all -n database
+kubectl get pvc -n database
+kubectl describe pvc -n database
+kubectl describe pod <pod-name> -n database
+kubectl get pods -o wide
+ kubectl get nodes -o wide
+ kubectl get svc -o wide
+  kubectl get svc -n database
+    kubectl get svc -n database -o wide
+  kubectl get svc -n frontend
+  kubectl get svc -n frontend -o wide
+
+  ###pvc flow
+
+  PVC → StorageClass → EBS CSI Driver → EBS Volume
+
+
+  ###common helm commands must know
+  helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+helm search repo postgresql
+helm install mydb bitnami/postgresql -n database
+helm list -n database
+helm upgrade mydb bitnami/postgresql -f values.yaml
+helm rollback mydb 1
+helm uninstall mydb

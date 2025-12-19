@@ -1,0 +1,14 @@
+Kubernetes resources are grouped logically.
+
+API Group	                     Examples
+core (no name)	               Pod, Service, ConfigMap (v1)
+
+apps /v1	                       Deployment, ReplicaSet, StatefulSet
+
+batch	                      Job, CronJob
+
+networking.k8s.io	          Ingress, NetworkPolicy
+
+storage.k8s.io	               StorageClass
+
+rbac.authorization.k8s.io	   Role, RoleBinding
