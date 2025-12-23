@@ -4,7 +4,7 @@ auth:
   existingSecret: postgres-secret
   secretKeys:
     adminPasswordKey: postgres-password
-    userPasswordKey: postgres-password
+    userPasswordKey: postgres
 
 replicaCount: 2
 
