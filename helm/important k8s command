@@ -41,7 +41,7 @@ Create Nodegroup (Master machine)
 eksctl create nodegroup --cluster=K8s-Cluster \
                      --region=us-east-1 \
                      --name=Node  \
-                     --node-type=t3.small \
+                     --node-type=m7i-flex.large \
                      --nodes=2 \
                      --nodes-min=2 \
                      --nodes-max=2 \
