@@ -47,7 +47,7 @@ eksctl create nodegroup --cluster=K8s-Cluster \
                      --nodes-max=2 \
                      --node-volume-size=29 \
                      --ssh-access \
-                     --ssh-public-key=new-aws-key \
+                     --ssh-public-key=new-aws-key 
                 
 #################################################################################################################
  Create deployment, namespace, service files and apply using kubectl
